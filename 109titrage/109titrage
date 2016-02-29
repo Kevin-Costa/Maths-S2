@@ -1,0 +1,208 @@
+#!/usr/bin/python
+
+import matplotlib.pyplot as plt
+import os, sys, math
+
+################################ CHECK ENV ##############################
+
+try:
+    os.environ["DISPLAY"]
+except KeyError:
+    print('Probleme avec l\'environnement')
+    sys.exit(1)
+
+################################ GLOBALE ################################
+
+x = []
+y = []
+deri_y = []
+color = ''
+
+################################ PARSING ################################
+
+def parsing():
+    try:
+        wordtab = sys.stdin.read().splitlines()
+    except:
+        print("\nImpossible de lire le fichier")
+        sys.exit(1)
+    i = 0
+    while (i < len(wordtab) and wordtab[i] != "FIN"):
+        if (len(wordtab[i]) != 0):
+            tmp = wordtab[i].split(";")
+            if (len(tmp) != 2):
+                print("line " + str(i) + " : " + wordtab[i])
+                print("cette ligne n'est pas valide il faut deux nombres reels (x, y)")
+                sys.exit(1);
+            try:
+                x.append(float(tmp[0]))
+                y.append(float(tmp[1]))
+            except:
+                print("line " + str(i) + " : " + wordtab[i])
+                print("cette ligne n'est pas valide il faut deux nombres reels (x, y)")
+                sys.exit(1);
+        i += 1
+    if (i >= len(wordtab) or wordtab[i] != "FIN") :
+        print ("Le fichier ne se termine pas par FIN")
+        sys.exit(1)
+
+################################### SORT ################################
+
+def sort():
+    i = 0;
+    while (i < len(x)):
+        j = i + 1
+        while (j < len(x)):
+            if (x[i] > x[j]):
+                x[i], x[j] = x[j], x[i]
+                y[i], y[j] = y[j], y[i]
+            j += 1
+        i += 1
+
+#################################### DERIVE #############################
+
+def my_derive():
+    i = 1
+    deri_y.append((y[1] - y[0]) / (x[1] - x[0]))
+    while (i + 1 < len(x)):
+        taux_arriere = ((x[i] - x[i - 1]) / (x[i + 1] - x[i - 1]) * 2) * (y[i] - y[i - 1]) / (x[i] - x[i - 1])
+        taux_avant = ((x[i + 1] - x[i]) / (x[i + 1] - x[i - 1]) * 2) * (y[i + 1] - y[i]) / (x[i + 1] - x[i])
+        deri_y.append((taux_arriere + taux_avant) / 2)
+        i += 1
+    deri_y.append((y[i] - y[i - 1]) / (x[i] - x[i - 1]))
+
+#################################### Vol equi ###########################
+
+def my_vol_equi():
+    i = 0;
+    vol_equi = 0
+    max_y = 0;
+    while (i < len(deri_y)):
+        if (max_y < deri_y[i]):
+            max_y = deri_y[i]
+            vol_equi = i
+        i += 1
+    return vol_equi
+
+#################################### OPTION 1 ###########################
+
+def option_1():
+    print("Volume equivalent : " + str(x[my_vol_equi()]) + " mL")
+    plt.plot(x, deri_y, '-', label = "Derivee de la courbe du pH")
+
+#################################### OPTION 2 ###########################
+
+def option_2():
+    try:
+        angle = float(sys.argv[1])
+    except:
+        print("Erreur entrer un nombre reel")
+        sys.exit(1)
+    if (angle < 10 or angle > 80):
+        print("Veuillez rentrer un angle entre 10 et 80 degres")
+        sys.exit(1)
+    tan_x = [str(x[0]), str(x[len(x) - 1])]
+    coef_dire = math.tan(angle * math.pi / 180.0)
+
+    tmp = deri_y[0]
+    i = 0
+    tmp_i = i
+    while (i < my_vol_equi()):
+        if (abs(deri_y[i] - coef_dire) < abs(tmp - coef_dire)):
+            tmp = deri_y[i]
+            tmp_i = i
+        i += 1
+
+    b_1 = y[tmp_i] - (coef_dire * x[tmp_i])
+    tan_y = [str(coef_dire * x[0] + b_1), str(coef_dire * x[len(x) - 1] + b_1)]
+    plt.plot(tan_x, tan_y)
+    if (i < len(deri_y)):
+        tmp = deri_y[i]
+    tmp_i = i
+    while (i < len(deri_y)):
+        if (abs(deri_y[i] - coef_dire) < abs(tmp - coef_dire)):
+            tmp = deri_y[i]
+            tmp_i = i
+        i += 1
+
+    b_2 = y[tmp_i] - (coef_dire * x[tmp_i])
+    tan_y = [str(coef_dire * x[0] + b_2), str(coef_dire * x[len(x) - 1] + b_2)]
+    plt.plot(tan_x, tan_y)
+
+    tan_y = [str(coef_dire * x[0] + (b_1 + b_2) / 2), str(coef_dire * x[len(x) - 1] + (b_1 + b_2) / 2)]
+    plt.plot(tan_x, tan_y)
+
+################################ BONUS ################################## 
+
+def couleur():
+    if sys.argv[1] == 'vert':
+        color = 'g'
+    elif sys.argv[1] == 'bleu':
+        color = 'b'
+    elif sys.argv[1] == 'rouge':
+        color = 'r'
+    elif sys.argv[1] == 'cyan':
+        color = 'c'
+    elif sys.argv[1] == 'violet':
+        color = 'm'
+    elif sys.argv[1] == 'jaune':
+        color = 'y'
+    elif sys.argv[1] == 'noir':
+        color = 'k'
+    return(color)
+
+def couleur2():
+    if sys.argv[2] == 'vert':
+        color = 'g'
+    elif sys.argv[2] == 'bleu':
+        color = 'b'
+    elif sys.argv[2] == 'rouge':
+        color = 'r'
+    elif sys.argv[2] == 'cyan':
+        color = 'c'
+    elif sys.argv[2] == 'violet':
+        color = 'm'
+    elif sys.argv[2] == 'jaune':
+        color = 'y'
+    elif sys.argv[2] == 'noir':
+        color = 'k'
+    return (color)
+################################ MAIN ###################################
+
+parsing()
+if (len(x) < 2):
+    print("Pas assez de valeur")
+    sys.exit(1)
+sort()
+my_derive()
+if (len(sys.argv) == 1):
+    option_1()
+elif (len(sys.argv) == 2 and (sys.argv[1] == 'vert' or sys.argv[1] == 'bleu' or sys.argv[1] == 'rouge' or
+                              sys.argv[1] == 'cyan' or sys.argv[1] == 'violet' or sys.argv[1] == 'jaune' or sys.argv[1] == 'noir')):
+    option_1()
+    color = couleur()
+elif ((len(sys.argv) == 2 and sys.argv[1] == 'couleur') or (len(sys.argv) == 3 and sys.argv[2] == 'couleur')):
+    print("Vous pouvez choisir comme couleur pour la courbe du pH:")
+    print("- vert\n- bleu\n- rouge\n- cyan\n- violet\n- jaune\n- noir")
+    sys.exit(1)
+elif (len(sys.argv) == 2):
+    option_2()
+elif (len(sys.argv) == 3 and (sys.argv[2] == 'vert' or sys.argv[2] == 'bleu' or sys.argv[2] == 'rouge' or
+                              sys.argv[2] == 'cyan' or sys.argv[2] == 'violet' or sys.argv[2] == 'jaune' or sys.argv[2] == 'noir')):
+    option_2()
+    color = couleur2()
+else:
+    print("./109titrage < file || ./109titrage angle < file")
+    sys.exit(1)
+
+tmp_x = [str(x[my_vol_equi()]), str(x[my_vol_equi()])]
+tmp_y = [0, max(y)]
+plt.plot(tmp_x, tmp_y, "m", label = "Volume titrant")
+plt.plot(x, y, color , label = "Courbe du pH")
+plt.title("109titrage")
+plt.ylabel("pH")
+plt.xlabel("volume en mL")
+plt.grid(1)
+plt.legend(loc=0)
+plt.show()
+
